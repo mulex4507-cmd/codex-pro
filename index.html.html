@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Codex Pro</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Arial,sans-serif;
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+}
+
+header{
+    background:#2563eb;
+    color:white;
+    padding:12px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+header span{
+    font-size:22px;
+    font-weight:bold;
+}
+
+.container{
+    flex:1;
+    display:flex;
+}
+
+textarea{
+    width:50%;
+    border:none;
+    outline:none;
+    resize:none;
+    padding:15px;
+    font-size:16px;
+    font-family:monospace;
+}
+
+iframe{
+    width:50%;
+    border:none;
+    background:white;
+}
+
+footer{
+    background:#f0f0f0;
+    padding:10px;
+    text-align:center;
+}
+
+button{
+    padding:10px 16px;
+    margin:5px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    color:white;
+    font-weight:bold;
+}
+
+#runBtn{
+    background:green;
+}
+
+#clearBtn{
+    background:red;
+}
+
+#saveBtn{
+    background:#2563eb;
+}
+
+#historyBtn{
+    background:orange;
+}
+
+#fullscreenBtn{
+    background:black;
+}
+
+#historyPanel{
+    position:fixed;
+    top:0;
+    right:0;
+    width:300px;
+    height:100%;
+    background:#111;
+    color:white;
+    padding:10px;
+    overflow-y:auto;
+    transform:translateX(100%);
+    transition:0.3s;
+    z-index:999;
+}
+
+#historyPanel.show{
+    transform:translateX(0);
+}
+
+.historyItem{
+    background:#222;
+    padding:10px;
+    margin:5px 0;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+.historyItem:hover{
+    background:#444;
+}
+
+@media(max-width:768px){
+
+.container{
+    flex-direction:column;
+}
+
+textarea,
+iframe{
+    width:100%;
+    height:50%;
+}
+
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <span>💻 Codex Pro</span>
+    <button id="fullscreenBtn">⛶ Full</button>
+</header>
+
+<div class="container">
+
+<textarea id="code">
+<h1>Hello Codex Pro</h1>
+<p>Write your code and press Run.</p>
+</textarea>
+
+<iframe id="output"></iframe>
+
+</div>
+
+<footer>
+    <button id="runBtn">▶ Run</button>
+    <button id="clearBtn">🗑 Clear</button>
+    <button id="saveBtn">💾 Save</button>
+    <button id="historyBtn">📜 History</button>
+</footer>
+
+<div id="historyPanel">
+
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<h3>📜 Code History</h3>
+
+<button onclick="closeHistory()" style="background:red;">
+❌
+</button>
+</div>
+
+<button onclick="clearHistory()" style="background:red;width:100%;">
+🗑 Clear History
+</button>
+
+<div id="historyList"></div>
+
+</div>
+
+<script>
+
+const code=document.getElementById("code");
+const output=document.getElementById("output");
+
+const runBtn=document.getElementById("runBtn");
+const clearBtn=document.getElementById("clearBtn");
+const saveBtn=document.getElementById("saveBtn");
+const historyBtn=document.getElementById("historyBtn");
+const fullscreenBtn=document.getElementById("fullscreenBtn");
+
+const historyPanel=document.getElementById("historyPanel");
+const historyList=document.getElementById("historyList");
+
+let history=
+JSON.parse(localStorage.getItem("codexHistory")) || [];
+
+/* RUN */
+
+runBtn.onclick=()=>{
+
+output.srcdoc=code.value;
+
+if(code.value.trim()!==""){
+
+history.unshift(code.value);
+
+if(history.length>20){
+history.pop();
+}
+
+localStorage.setItem(
+"codexHistory",
+JSON.stringify(history)
+);
+
+renderHistory();
+
+}
+
+};
+
+/* CLEAR */
+
+clearBtn.onclick=()=>{
+
+code.value="";
+output.srcdoc="";
+
+};
+
+/* SAVE */
+
+saveBtn.onclick=()=>{
+
+const blob=
+new Blob([code.value],{
+type:"text/html"
+});
+
+const url=
+URL.createObjectURL(blob);
+
+const a=
+document.createElement("a");
+
+a.href=url;
+a.download="codex-pro.html";
+
+a.click();
+
+URL.revokeObjectURL(url);
+
+};
+
+/* HISTORY */
+
+historyBtn.onclick=()=>{
+
+historyPanel.classList.toggle("show");
+
+};
+
+function closeHistory(){
+
+historyPanel.classList.remove("show");
+
+}
+
+function renderHistory(){
+
+historyList.innerHTML="";
+
+history.forEach((item,index)=>{
+
+const div=
+document.createElement("div");
+
+div.className="historyItem";
+
+div.innerHTML=
+"Code "+(index+1);
+
+div.onclick=()=>{
+
+code.value=item;
+output.srcdoc=item;
+
+};
+
+historyList.appendChild(div);
+
+});
+
+}
+
+function clearHistory(){
+
+history=[];
+
+localStorage.removeItem(
+"codexHistory"
+);
+
+renderHistory();
+
+}
+
+/* FULLSCREEN OUTPUT */
+
+fullscreenBtn.onclick=()=>{
+
+output.srcdoc=code.value;
+
+if(!document.fullscreenElement){
+
+output.requestFullscreen();
+
+}else{
+
+document.exitFullscreen();
+
+}
+
+};
+
+/* START */
+
+window.onload=()=>{
+
+output.srcdoc=code.value;
+
+renderHistory();
+
+};
+
+</script>
+
+</body>
+</html>
